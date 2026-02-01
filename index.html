@@ -283,6 +283,125 @@
             0%, 100% { opacity: 0; transform: scale(0); }
             50% { opacity: 1; transform: scale(1); }
         }
+
+        /* Responsive styles */
+        @media (max-width: 480px) {
+            body {
+                padding: 15px;
+            }
+
+            .container {
+                padding: 30px 25px;
+                border-radius: 20px;
+                margin: 10px;
+                max-width: 100%;
+            }
+
+            .emoji-container {
+                font-size: 50px;
+                margin-bottom: 15px;
+            }
+
+            .question {
+                font-size: 24px;
+                margin-bottom: 20px;
+            }
+
+            .question span {
+                font-size: 18px;
+                margin-top: 6px;
+            }
+
+            .buttons-wrapper {
+                min-width: unset;
+                width: 100%;
+                height: 130px;
+            }
+
+            .btn {
+                padding: 12px 25px;
+                font-size: 14px;
+                letter-spacing: 0.5px;
+            }
+
+            .btn-yes {
+                left: 50%;
+                top: 30%;
+            }
+
+            .celebration-emoji {
+                font-size: 80px;
+            }
+
+            .celebration-text {
+                font-size: 36px;
+                margin-top: 20px;
+            }
+
+            .celebration-sub {
+                font-size: 18px;
+                margin-top: 15px;
+                padding: 0 20px;
+            }
+
+            .celebration-content > div:last-child {
+                font-size: 30px !important;
+                margin-top: 25px !important;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .container {
+                padding: 25px 20px;
+            }
+
+            .emoji-container {
+                font-size: 40px;
+            }
+
+            .question {
+                font-size: 20px;
+            }
+
+            .question span {
+                font-size: 16px;
+            }
+
+            .btn {
+                padding: 10px 20px;
+                font-size: 12px;
+            }
+
+            .buttons-wrapper {
+                height: 120px;
+            }
+        }
+
+        @media (min-width: 481px) and (max-width: 768px) {
+            .container {
+                padding: 35px 40px;
+            }
+
+            .emoji-container {
+                font-size: 60px;
+            }
+
+            .question {
+                font-size: 28px;
+            }
+
+            .question span {
+                font-size: 20px;
+            }
+
+            .celebration-emoji {
+                font-size: 100px;
+            }
+
+            .celebration-text {
+                font-size: 45px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -344,9 +463,14 @@
         function initButtonPosition() {
             const wrapperRect = wrapper.getBoundingClientRect();
             const btnRect = noBtn.getBoundingClientRect();
-            // Start on the right side
-            btnX = wrapperRect.width * 0.7;
-            btnY = wrapperRect.height / 2;
+            // On mobile (narrow screens), position at bottom-center, otherwise right side
+            if (wrapperRect.width < 300) {
+                btnX = wrapperRect.width / 2;
+                btnY = wrapperRect.height * 0.75;
+            } else {
+                btnX = wrapperRect.width * 0.7;
+                btnY = wrapperRect.height / 2;
+            }
             updateButtonPosition();
         }
         
@@ -374,16 +498,17 @@
             const dy = btnCenterY - cursorY;
             const distance = Math.sqrt(dx * dx + dy * dy);
             
-            // Only run if cursor is within 80px
-            if (distance < 80) {
+            // Only run if cursor is within range (smaller on mobile)
+            const triggerDistance = wrapperRect.width < 300 ? 60 : 80;
+            if (distance < triggerDistance) {
                 dodgeCount++;
                 
                 // Change text sometimes
                 const msgIndex = Math.min(Math.floor(dodgeCount / 3), messages.length - 1);
                 noBtn.textContent = messages[msgIndex];
                 
-                // Calculate escape direction (away from cursor)
-                const escapeDistance = 100;
+                // Calculate escape direction (away from cursor) - shorter on mobile
+                const escapeDistance = wrapperRect.width < 300 ? 70 : 100;
                 let newX = btnX + (dx / distance) * escapeDistance;
                 let newY = btnY + (dy / distance) * escapeDistance;
                 
@@ -391,8 +516,9 @@
                 newX += (Math.random() - 0.5) * 30;
                 newY += (Math.random() - 0.5) * 30;
                 
-                // Keep within bounds (with padding for button size)
-                const padding = 50;
+                // Keep within bounds (with padding for button size) - smaller padding on mobile
+                const isMobile = wrapperRect.width < 300;
+                const padding = isMobile ? 40 : 50;
                 const minX = padding;
                 const maxX = wrapperRect.width - padding;
                 const minY = padding;
@@ -435,6 +561,29 @@
             e.stopPropagation();
             runFromCursor(e);
         });
+
+        // Touch support for mobile
+        function handleTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0] || e.changedTouches[0];
+            runFromCursor({
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+        }
+
+        wrapper.addEventListener('touchmove', handleTouch, { passive: false });
+        wrapper.addEventListener('touchstart', handleTouch, { passive: false });
+        
+        noBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const touch = e.touches[0];
+            runFromCursor({
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+        }, { passive: false });
 
         // Yes celebration!
         function sayYes() {
